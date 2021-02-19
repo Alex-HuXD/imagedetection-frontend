@@ -5,14 +5,9 @@ import Logo from "./components/logo/Logo";
 import ImageLinkForm from "./components/imagelinkform/ImageLinkForm";
 import Rank from "./components/rank/Rank";
 import Particles from "react-particles-js";
-import Clarifai from "clarifai";
 import FaceRecognition from "./components/facerecognition/FaceRecognition";
 import SignIn from "./components/Sign_in/SignIn";
 import Register from "./components/register/Register";
-
-const app = new Clarifai.App({
-  apiKey: "f2e3b322e46e4bdbac55c8c4caf58527",
-});
 
 const ParticlesOptions = {
   particles: {
@@ -26,6 +21,7 @@ const ParticlesOptions = {
   },
 };
 
+// clear up initialState on route change
 const initialState = {
   input: "",
   imageUrl: "",
@@ -84,8 +80,14 @@ class App extends Component {
 
   onSubmit = () => {
     this.setState({ imageUrl: this.state.input });
-    app.models
-      .predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+    fetch("https://image-detection-sv.herokuapp.com/imageURL", {
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: this.state.input,
+      }),
+    })
+      .then((resp) => resp.json())
       .then((resp) => {
         if (resp) {
           fetch("https://image-detection-sv.herokuapp.com/image", {
