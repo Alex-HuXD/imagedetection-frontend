@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Component } from "react";
 import "./App.css";
 import Navigation from "./components/navigation/Navigation";
 import Logo from "./components/logo/Logo";
@@ -37,12 +37,14 @@ const initialState = {
   },
 };
 
-const App = () => {
-  const [state, setState] = useState(initialState);
+class App extends Component {
+  constructor() {
+    super();
+    this.state = initialState;
+  }
 
-  const loadUser = (userData) => {
-    setState(() => ({
-      ...state,
+  loadUser = (userData) => {
+    this.setState({
       user: {
         id: userData.id,
         name: userData.name,
@@ -50,10 +52,10 @@ const App = () => {
         entries: userData.entries,
         joined: userData.joined,
       },
-    }));
+    });
   };
 
-  const faceLocation = (data) => {
+  faceLocation = (data) => {
     const detectedFace =
       data.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById("inputimage");
@@ -67,21 +69,22 @@ const App = () => {
     };
   };
 
-  const displayFaceBox = (box) => {
-    setState({ ...state, box: box });
+  displayFaceBox = (box) => {
+    this.setState({ box: box });
+    console.log(box);
   };
 
-  const onInputChange = (e) => {
-    setState({ ...state, input: e.target.value });
+  onInputChange = (e) => {
+    this.setState({ input: e.target.value });
   };
 
-  const onSubmit = () => {
-    setState({ ...state, imageUrl: state.input });
+  onSubmit = () => {
+    this.setState({ imageUrl: this.state.input });
     fetch("https://image-detection-sv.herokuapp.com/imageURL", {
       method: "post",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        input: state.input,
+        input: this.state.input,
       }),
     })
       .then((resp) => resp.json())
@@ -91,48 +94,62 @@ const App = () => {
             method: "put",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              id: state.user.id,
+              id: this.state.user.id,
             }),
           })
             .then((resp) => resp.json())
             .then((count) => {
-              setState(Object.assign(state.user, { entries: count }));
+              this.setState(Object.assign(this.state.user, { entries: count }));
             })
             .catch(console.log);
         }
-        displayFaceBox(faceLocation(resp));
+        this.displayFaceBox(this.faceLocation(resp));
       })
       .catch((err) => console.log(`something is wrong err: ${err}`));
   };
 
-  const onRouteChange = (route) => {
+  onRouteChange = (route) => {
     if (route === "signout") {
-      setState(initialState);
+      this.setState(initialState);
     } else if (route === "home") {
-      setState({ ...state, isSignedIn: true });
+      this.setState({ isSignedIn: true });
     }
-    setState({ ...state, route: route });
+    this.setState({ route: route });
   };
 
-  const { isSignedIn, imageUrl, route, box } = state;
-  return (
-    <div className="App">
-      <Particles className="particles" params={ParticlesOptions} />
-      <Navigation isSignedIn={isSignedIn} onRouteChange={onRouteChange} />
-      {state.route === "home" ? (
-        <div>
-          <Logo />
-          <Rank name={state.user.name} entries={state.user.entries} />
-          <ImageLinkForm onInputChange={onInputChange} onSubmit={onSubmit} />
-          <FaceRecognition imageUrl={imageUrl} box={box} />
-        </div>
-      ) : route === "signin" ? (
-        <SignIn onRouteChange={onRouteChange} loadUser={loadUser} />
-      ) : (
-        <Register onRouteChange={onRouteChange} loadUser={loadUser} />
-      )}
-    </div>
-  );
-};
+  render() {
+    const { isSignedIn, imageUrl, route, box } = this.state;
+    return (
+      <div className="App">
+        <Particles className="particles" params={ParticlesOptions} />
+        <Navigation
+          isSignedIn={isSignedIn}
+          onRouteChange={this.onRouteChange}
+        />
+        {this.state.route === "home" ? (
+          <div>
+            <Logo />
+            <Rank
+              name={this.state.user.name}
+              entries={this.state.user.entries}
+            />
+            <ImageLinkForm
+              onInputChange={this.onInputChange}
+              onSubmit={this.onSubmit}
+            />
+            <FaceRecognition imageUrl={imageUrl} box={box} />
+          </div>
+        ) : route === "signin" ? (
+          <SignIn onRouteChange={this.onRouteChange} loadUser={this.loadUser} />
+        ) : (
+          <Register
+            onRouteChange={this.onRouteChange}
+            loadUser={this.loadUser}
+          />
+        )}
+      </div>
+    );
+  }
+}
 
 export default App;
